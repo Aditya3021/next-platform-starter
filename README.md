@@ -87,6 +87,8 @@ ContentForge then creates platform-specific campaign assets and exposes quality 
                     └──────────────────┘
 ```
 
+![ContentForge architecture](docs/contentforge-architecture.svg)
+
 ## 🏗️ Technical stack
 
 - **Frontend:** Next.js 15 App Router + React
