@@ -82,7 +82,7 @@ export default function Page() {
         };
         localStorage.setItem('contentforge-campaign', JSON.stringify({ ...payload, generated: true, savedAt: new Date().toISOString() }));
         try {
-            if (!currentUser) { setHistory([]); setCloudMode(false); setHistoryLoading(false); return; }
+            if (!user) { setCloudMode(false); setSaved(true); setTimeout(() => setSaved(false), 1800); return; }
             const response = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
