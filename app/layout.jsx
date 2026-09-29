@@ -4,20 +4,18 @@ import { Header } from '../components/header';
 
 export const metadata = {
     title: {
-        template: '%s | Netlify',
-        default: 'Netlify Starter'
-    }
+        template: '%s | ContentForge AI',
+        default: 'ContentForge AI'
+    },
+    description: 'A generative content workflow for turning one campaign idea into multi-platform content.'
 };
 
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
-            <head>
-                <link rel="icon" href="/favicon.svg" sizes="any" />
-            </head>
-            <body className="antialiased text-white bg-blue-900">
-                <div className="flex flex-col min-h-screen px-6 bg-noise sm:px-12">
-                    <div className="flex flex-col w-full max-w-5xl mx-auto grow">
+            <body className="antialiased text-white bg-slate-950">
+                <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.12),transparent_35%),radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_30%)] px-5 sm:px-8">
+                    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col">
                         <Header />
                         <main className="grow">{children}</main>
                         <Footer />
