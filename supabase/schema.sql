@@ -15,13 +15,16 @@ create table if not exists public.campaigns (
   updated_at timestamptz not null default now()
 );
 
+alter table public.campaigns add column if not exists user_id uuid references auth.users(id) on delete cascade;
 alter table public.campaigns enable row level security;
 
 create index if not exists campaigns_user_updated_idx
   on public.campaigns(user_id, updated_at desc);
 
--- If the table already existed before authentication was added:
--- alter table public.campaigns add column if not exists user_id uuid references auth.users(id) on delete cascade;
+drop policy if exists "Users can read their campaigns" on public.campaigns;
+drop policy if exists "Users can insert their campaigns" on public.campaigns;
+drop policy if exists "Users can update their campaigns" on public.campaigns;
+drop policy if exists "Users can delete their campaigns" on public.campaigns;
 
 create policy "Users can read their campaigns"
   on public.campaigns for select
