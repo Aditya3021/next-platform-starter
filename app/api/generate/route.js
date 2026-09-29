@@ -20,7 +20,7 @@ function fallback(topic, audience, goal, tone) {
 }
 
 function extractJson(text) {
-    const cleaned = text.replace(/\\\`\\\`\\\`json/gi, '').replace(/\\\`\\\`\\\`/g, '').trim();
+    const cleaned = text.split('```json').join('').split('```').join('').trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
     return JSON.parse(cleaned.slice(start, end + 1));
