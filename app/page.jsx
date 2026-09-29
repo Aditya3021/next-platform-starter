@@ -52,6 +52,7 @@ export default function Page() {
     const [authPassword, setAuthPassword] = useState('');
     const [authBusy, setAuthBusy] = useState(false);
     const [authMessage, setAuthMessage] = useState('');
+    const [strategy, setStrategy] = useState({ angle: 'A focused campaign built around one consistent idea.' });
 
     useEffect(() => {
         loadAuth();
@@ -67,6 +68,7 @@ export default function Page() {
             if (data.brandTone) setBrandTone(data.brandTone);
             if (data.avoid) setAvoid(data.avoid);
             if (Array.isArray(data.selectedPlatforms)) setSelectedPlatforms(data.selectedPlatforms);
+            if (data.strategy) setStrategy(data.strategy);
             if (Array.isArray(data.assets) && data.assets.length) setAssets(data.assets);
             if (data.generated) setGenerated(true);
             setStatus('Saved campaign restored');
@@ -223,6 +225,7 @@ export default function Page() {
             setActiveAsset(0);
             saveCampaign(data.assets || assets);
         } catch {
+            setStrategy({ angle: 'A focused campaign built from the campaign brief.' });
             setAssets(fallbackAssets(topic, audience, goal, brandTone));
             setStatus('Demo workflow — API unavailable');
             setGenerated(true);
@@ -261,6 +264,38 @@ export default function Page() {
     }
 
     function downloadCampaign() {
+        const safe = (value) => String(value ?? '').replace(/"/g, '""');
+        const rows = [['Day', 'Platform', 'Type', 'Title', 'Body', 'Hook', 'Fit', 'CTA']];
+        assets.forEach((item) => rows.push([
+            item.day, item.platform, item.type, item.title, item.body,
+            item.scores?.hook ?? '', item.scores?.fit ?? '', item.scores?.cta ?? '',
+        ]));
+        const csv = rows.map((row) => row.map((value) => '"' + safe(value) + '"').join(',')).join('\\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'contentforge-campaign.csv';
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadMarkdown() {
+        const markdown = '# ' + (topic || 'ContentForge Campaign') + '\\n\\n'
+            + '**Audience:** ' + audience + '\\n\\n'
+            + '**Goal:** ' + goal + '\\n\\n'
+            + '**Strategy:** ' + (strategy.angle || 'Multi-platform campaign workflow') + '\\n\\n'
+            + assets.map((item) => '## Day ' + item.day + ' — ' + item.platform + '\\n\\n'
+                + '**' + item.type + ':** ' + item.title + '\\n\\n' + item.body + '\\n').join('\\n');
+        const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'contentforge-campaign.md';
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
         const blob = new Blob([campaignText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -357,10 +392,10 @@ export default function Page() {
             <section className="mt-16">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Workflow output</p><h2 className="mt-2 text-3xl font-black">Campaign command center</h2></div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={copyCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Copy</button>
                         <button type="button" onClick={() => saveCampaign()} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-teal-200 hover:bg-white/10">{saved ? 'Saved' : 'Save campaign'}</button>
-                        <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export .txt</button>
+                        <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export CSV</button><button type="button" onClick={downloadMarkdown} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export MD</button>
                     </div>
                 </div>
 
@@ -475,6 +510,15 @@ export default function Page() {
                             ))}
                         </div>
                     )}
+                </div>
+            </section>
+
+            <section className="mt-8">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Assets</p><p className="mt-2 text-3xl font-black">{assets.length}</p><p className="mt-1 text-xs text-slate-500">platform-ready pieces</p></div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Platforms</p><p className="mt-2 text-3xl font-black">{new Set(assets.map((item) => item.platform)).size}</p><p className="mt-1 text-xs text-slate-500">channels covered</p></div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Avg quality</p><p className="mt-2 text-3xl font-black">{assets.length ? Math.round(assets.reduce((sum, item) => sum + (Number(item.scores?.hook ?? 0) + Number(item.scores?.fit ?? 0) + Number(item.scores?.cta ?? 0)) / 3, 0) / assets.length) : 0}<span className="text-base text-slate-500">/100</span></p><p className="mt-1 text-xs text-slate-500">across quality signals</p></div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Strategy</p><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">{strategy.angle}</p></div>
                 </div>
             </section>
 
