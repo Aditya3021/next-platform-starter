@@ -34,7 +34,7 @@ Open http://localhost:3000.
 - [ ] Persistent campaign history
 - [ ] Export to Markdown/CSV
 - [ ] Real quality evaluation
-- [ ] Authentication and team workspaces
+- [x] Supabase email authentication and user-scoped campaign workspaces
 
 
 ## Demo persistence
@@ -44,3 +44,7 @@ The MVP stores the latest campaign in browser localStorage so a refresh can rest
 ## Optional cloud persistence
 
 For a hackathon/demo deployment, the app works with browser storage by default. To enable server-side campaign persistence, create the `campaigns` table using `supabase/schema.sql` and configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is used only by the server route and must never be exposed to the client.
+
+## Authentication
+
+The MVP now supports Supabase email/password sign-in. Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`, then run the updated `supabase/schema.sql`. Authentication uses an HttpOnly access-token cookie; campaign reads, saves, and deletes are scoped to the signed-in Supabase user. The service-role key remains server-only.
