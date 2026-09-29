@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const platforms = ['Instagram', 'YouTube', 'LinkedIn', 'Blog'];
 const starterAssets = [
@@ -39,6 +39,34 @@ export default function Page() {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('Prototype mode');
     const [activeAsset, setActiveAsset] = useState(0);
+    const [regenerating, setRegenerating] = useState(false);
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        try {
+            const savedCampaign = localStorage.getItem('contentforge-campaign');
+            if (!savedCampaign) return;
+            const data = JSON.parse(savedCampaign);
+            if (data.topic) setTopic(data.topic);
+            if (data.audience) setAudience(data.audience);
+            if (data.goal) setGoal(data.goal);
+            if (data.brandTone) setBrandTone(data.brandTone);
+            if (data.avoid) setAvoid(data.avoid);
+            if (Array.isArray(data.selectedPlatforms)) setSelectedPlatforms(data.selectedPlatforms);
+            if (Array.isArray(data.assets) && data.assets.length) setAssets(data.assets);
+            if (data.generated) setGenerated(true);
+            setStatus('Saved campaign restored');
+        } catch {}
+    }, []);
+
+    function saveCampaign(nextAssets = assets) {
+        localStorage.setItem('contentforge-campaign', JSON.stringify({
+            topic, audience, goal, brandTone, avoid, selectedPlatforms,
+            assets: nextAssets, generated: true, savedAt: new Date().toISOString(),
+        }));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1800);
+    }
 
     const active = assets[activeAsset] || assets[0];
     const campaignText = useMemo(
@@ -71,6 +99,7 @@ export default function Page() {
             setStatus(data.mode === 'ai' ? 'AI workflow generated' : 'Demo workflow generated');
             setGenerated(true);
             setActiveAsset(0);
+            saveCampaign(data.assets || assets);
         } catch {
             setAssets(fallbackAssets(topic, audience, goal, brandTone));
             setStatus('Demo workflow — API unavailable');
@@ -79,6 +108,30 @@ export default function Page() {
         } finally {
             setLoading(false);
         }
+    }
+
+    async function regenerateActiveAsset() {
+        if (!active) return;
+        setRegenerating(true);
+        setStatus('Regenerating asset…');
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, audience, goal, brand: { tone: brandTone, avoid }, platforms: [active.platform], regenerate: true }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.assets?.length) throw new Error('Regeneration failed');
+            const replacement = { ...data.assets[0], day: active.day };
+            const next = assets.map((item, index) => index === activeAsset ? replacement : item);
+            setAssets(next);
+            saveCampaign(next);
+            setStatus(data.mode === 'ai' ? 'Asset regenerated with AI' : 'Asset regenerated in demo mode');
+        } catch {
+            const next = fallbackAssets(topic, audience, goal, brandTone);
+            setAssets(next);
+            saveCampaign(next);
+            setStatus('Asset regenerated in demo mode');
+        } finally { setRegenerating(false); }
     }
 
     function copyCampaign() {
@@ -184,6 +237,7 @@ export default function Page() {
                     <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Workflow output</p><h2 className="mt-2 text-3xl font-black">Campaign command center</h2></div>
                     <div className="flex gap-2">
                         <button type="button" onClick={copyCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Copy</button>
+                        <button type="button" onClick={() => saveCampaign()} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-teal-200 hover:bg-white/10">{saved ? 'Saved' : 'Save campaign'}</button>
                         <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export .txt</button>
                     </div>
                 </div>
@@ -205,7 +259,10 @@ export default function Page() {
                                 <div className="flex items-center gap-2"><span className="rounded-full bg-teal-300/10 px-2.5 py-1 text-xs font-semibold text-teal-200">{active.platform}</span><span className="text-xs text-slate-500">{active.type}</span></div>
                                 <h3 className="mt-3 text-2xl font-bold">{active.title}</h3>
                             </div>
-                            <button type="button" onClick={() => navigator.clipboard?.writeText(active.body)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5">Copy asset</button>
+                            <div className="flex gap-2">
+                                <button type="button" onClick={regenerateActiveAsset} disabled={regenerating} className="rounded-xl bg-teal-300 px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{regenerating ? 'Regenerating…' : 'Regenerate'}</button>
+                                <button type="button" onClick={() => navigator.clipboard?.writeText(active.body)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5">Copy asset</button>
+                            </div>
                         </div>
 
                         <div className="mt-6 rounded-2xl bg-slate-950/60 p-5 text-slate-200"><p className="leading-7">{active.body}</p></div>
@@ -229,6 +286,25 @@ export default function Page() {
                             </div>
                         </div>
                         <p className="mt-5 text-xs text-slate-500">{active.meta}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="mt-16">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Publishing calendar</p><h2 className="mt-2 text-3xl font-black">7-day campaign runway</h2></div>
+                        <span className="text-sm text-slate-500">Drag-free MVP calendar</span>
+                    </div>
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {Array.from({ length: 7 }, (_, index) => {
+                            const asset = assets[index % assets.length];
+                            return <button type="button" key={index} onClick={() => setActiveAsset(index % assets.length)} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left hover:border-teal-300/30">
+                                <p className="text-xs font-bold text-teal-300">DAY {index + 1}</p>
+                                <p className="mt-2 font-semibold">{asset?.platform || 'Content'}</p>
+                                <p className="mt-1 text-sm text-slate-400">{asset?.title || 'Campaign asset'}</p>
+                            </button>;
+                        })}
                     </div>
                 </div>
             </section>
