@@ -281,6 +281,16 @@ export default function Page() {
         URL.revokeObjectURL(url);
     }
 
+    function downloadText() {
+        const blob = new Blob([campaignText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'contentforge-campaign.txt';
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
     function downloadMarkdown() {
         const markdown = '# ' + (topic || 'ContentForge Campaign') + '\\n\\n'
             + '**Audience:** ' + audience + '\\n\\n'
@@ -387,7 +397,7 @@ export default function Page() {
                     <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={copyCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Copy</button>
                         <button type="button" onClick={() => saveCampaign()} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-teal-200 hover:bg-white/10">{saved ? 'Saved' : 'Save campaign'}</button>
-                        <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export CSV</button><button type="button" onClick={downloadMarkdown} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export MD</button>
+                        <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export CSV</button><button type="button" onClick={downloadMarkdown} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export MD</button><button type="button" onClick={downloadText} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export TXT</button>
                     </div>
                 </div>
 
