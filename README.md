@@ -35,3 +35,8 @@ Open http://localhost:3000.
 - [ ] Export to Markdown/CSV
 - [ ] Real quality evaluation
 - [ ] Authentication and team workspaces
+
+
+## Demo persistence
+
+The MVP stores the latest campaign in browser localStorage so a refresh can restore the workflow without requiring a database. This is intentionally client-side for the hackathon prototype; production persistence should move to Supabase/Postgres behind authentication.
