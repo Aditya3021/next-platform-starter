@@ -46,8 +46,15 @@ export default function Page() {
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
+    const [user, setUser] = useState(null);
+    const [authMode, setAuthMode] = useState('login');
+    const [authEmail, setAuthEmail] = useState('');
+    const [authPassword, setAuthPassword] = useState('');
+    const [authBusy, setAuthBusy] = useState(false);
+    const [authMessage, setAuthMessage] = useState('');
 
     useEffect(() => {
+        loadAuth();
         loadHistory();
         try {
             const savedCampaign = localStorage.getItem('contentforge-campaign');
@@ -75,6 +82,7 @@ export default function Page() {
         };
         localStorage.setItem('contentforge-campaign', JSON.stringify({ ...payload, generated: true, savedAt: new Date().toISOString() }));
         try {
+            if (!user) { setHistory([]); setCloudMode(false); setHistoryLoading(false); return; }
             const response = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -88,6 +96,49 @@ export default function Page() {
         } catch {}
         setSaved(true);
         setTimeout(() => setSaved(false), 1800);
+    }
+
+    async function loadAuth() {
+        try {
+            const response = await fetch('/api/auth', { cache: 'no-store' });
+            const data = await response.json();
+            if (data.authenticated) setUser(data.user);
+        } catch {}
+    }
+
+    async function authenticate(event) {
+        event.preventDefault();
+        setAuthBusy(true);
+        setAuthMessage('');
+        try {
+            const response = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: authMode, email: authEmail, password: authPassword }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Authentication failed');
+            if (data.user) {
+                setUser(data.user);
+                setAuthPassword('');
+                setAuthMessage(authMode === 'signup' && data.needsConfirmation ? 'Check your email to confirm your account.' : 'Signed in.');
+                loadHistory();
+            } else {
+                setAuthMessage('Account created. Check your email if confirmation is enabled.');
+            }
+        } catch (error) {
+            setAuthMessage(error.message);
+        } finally {
+            setAuthBusy(false);
+        }
+    }
+
+    async function signOut() {
+        await fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
+        setUser(null);
+        setHistory([]);
+        setCloudMode(false);
+        setStatus('Signed out');
     }
 
     async function loadHistory() {
@@ -357,6 +408,30 @@ export default function Page() {
                             </div>
                         </div>
                         <p className="mt-5 text-xs text-slate-500">{active.meta}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="mt-8">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Workspace identity</p>
+                            <h2 className="mt-2 text-2xl font-black">{user ? 'Signed-in workspace' : 'Sign in for cloud campaigns'}</h2>
+                            <p className="mt-1 text-sm text-slate-500">{user ? user.email : 'Your campaigns are scoped to your authenticated account.'}</p>
+                        </div>
+                        {user && <button type="button" onClick={signOut} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Sign out</button>}
+                    </div>
+                    {!user && (
+                        <form onSubmit={authenticate} className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                            <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="Email" className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
+                            <input type="password" required minLength={6} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="Password (6+ characters)" className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
+                            <button type="submit" disabled={authBusy} className="rounded-xl bg-teal-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50">{authBusy ? 'Working…' : authMode === 'login' ? 'Sign in' : 'Create account'}</button>
+                        </form>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        {!user && <button type="button" onClick={() => setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')} className="text-teal-200 hover:underline">{authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button>}
+                        {authMessage && <span>{authMessage}</span>}
                     </div>
                 </div>
             </section>
