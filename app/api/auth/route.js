@@ -41,7 +41,7 @@ export async function POST(request) {
         needsConfirmation: !token,
     });
     if (token) {
-        result.headers.set('Set-Cookie', `contentforge_access_token=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Secure`);
+        result.headers.set('Set-Cookie', `contentforge_access_token=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}Max-Age=3600`);
     }
     return result;
 }
@@ -63,6 +63,6 @@ export async function GET(request) {
 
 export async function DELETE() {
     const response = Response.json({ authenticated: false });
-    response.headers.set('Set-Cookie', 'contentforge_access_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure');
+    response.headers.set('Set-Cookie', `contentforge_access_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure' : ''}`);
     return response;
 }
