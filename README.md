@@ -40,3 +40,7 @@ Open http://localhost:3000.
 ## Demo persistence
 
 The MVP stores the latest campaign in browser localStorage so a refresh can restore the workflow without requiring a database. This is intentionally client-side for the hackathon prototype; production persistence should move to Supabase/Postgres behind authentication.
+
+## Optional cloud persistence
+
+For a hackathon/demo deployment, the app works with browser storage by default. To enable server-side campaign persistence, create the `campaigns` table using `supabase/schema.sql` and configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service-role key is used only by the server route and must never be exposed to the client.
