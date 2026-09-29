@@ -43,8 +43,12 @@ export default function Page() {
     const [saved, setSaved] = useState(false);
     const [campaignId, setCampaignId] = useState(null);
     const [cloudMode, setCloudMode] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
 
     useEffect(() => {
+        loadHistory();
         try {
             const savedCampaign = localStorage.getItem('contentforge-campaign');
             if (!savedCampaign) return;
@@ -84,6 +88,55 @@ export default function Page() {
         } catch {}
         setSaved(true);
         setTimeout(() => setSaved(false), 1800);
+    }
+
+    async function loadHistory() {
+        setHistoryLoading(true);
+        try {
+            const response = await fetch('/api/campaigns', { cache: 'no-store' });
+            const data = await response.json();
+            if (response.ok && Array.isArray(data.campaigns)) {
+                setHistory(data.campaigns);
+                setCloudMode(data.mode === 'supabase');
+            }
+        } catch {} finally {
+            setHistoryLoading(false);
+        }
+    }
+
+    function loadCampaign(campaign) {
+        setCampaignId(campaign.id);
+        setTopic(campaign.topic || '');
+        setAudience(campaign.audience || '');
+        setGoal(campaign.goal || 'Generate awareness');
+        setBrandTone(campaign.brand_tone || '');
+        setAvoid(campaign.avoid || '');
+        setSelectedPlatforms(Array.isArray(campaign.platforms) ? campaign.platforms : platforms.slice(0, 3));
+        setAssets(Array.isArray(campaign.assets) && campaign.assets.length ? campaign.assets : fallbackAssets(campaign.topic || '', campaign.audience || '', campaign.goal || '', campaign.brand_tone || ''));
+        setGenerated(true);
+        setActiveAsset(0);
+        setHistoryOpen(false);
+        setStatus('Campaign loaded');
+        localStorage.setItem('contentforge-campaign', JSON.stringify({
+            id: campaign.id, topic: campaign.topic, audience: campaign.audience,
+            goal: campaign.goal, brandTone: campaign.brand_tone, avoid: campaign.avoid,
+            selectedPlatforms: campaign.platforms, assets: campaign.assets, generated: true,
+        }));
+    }
+
+    async function deleteCampaign(id) {
+        if (!id) return;
+        try {
+            const response = await fetch('/api/campaigns/' + id, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Delete failed');
+            setHistory((current) => current.filter((item) => item.id !== id));
+            if (campaignId === id) {
+                setCampaignId(null);
+                setStatus('Campaign deleted');
+            }
+        } catch {
+            setStatus('Could not delete campaign');
+        }
     }
 
     const active = assets[activeAsset] || assets[0];
@@ -305,6 +358,48 @@ export default function Page() {
                         </div>
                         <p className="mt-5 text-xs text-slate-500">{active.meta}</p>
                     </div>
+                </div>
+            </section>
+
+            <section className="mt-10">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Campaign workspace</p>
+                            <h2 className="mt-2 text-2xl font-black">Saved campaigns</h2>
+                            <p className="mt-1 text-sm text-slate-500">Load previous campaigns, continue editing, or remove old drafts.</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => { setHistoryOpen((value) => !value); if (!historyOpen) loadHistory(); }} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">
+                                {historyOpen ? 'Hide history' : 'Open history'} {history.length ? '(' + history.length + ')' : ''}
+                            </button>
+                            <button type="button" onClick={loadHistory} disabled={historyLoading} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-teal-200 disabled:opacity-50">
+                                {historyLoading ? 'Refreshing…' : 'Refresh'}
+                            </button>
+                        </div>
+                    </div>
+                    {historyOpen && (
+                        <div className="mt-5 space-y-2">
+                            {!historyLoading && !history.length && (
+                                <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">
+                                    No cloud campaigns yet. Save a campaign to build your history.
+                                </div>
+                            )}
+                            {history.map((campaign) => (
+                                <div key={campaign.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <button type="button" onClick={() => loadCampaign(campaign)} className="min-w-0 text-left">
+                                        <p className="truncate font-semibold text-white">{campaign.name || campaign.topic || 'Untitled campaign'}</p>
+                                        <p className="mt-1 text-xs text-slate-500">{campaign.audience || 'No audience'} · {campaign.goal || 'No goal'} · {Array.isArray(campaign.assets) ? campaign.assets.length : 0} assets</p>
+                                    </button>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <span className="text-xs text-slate-600">{campaign.updated_at ? new Date(campaign.updated_at).toLocaleDateString() : ''}</span>
+                                        <button type="button" onClick={() => loadCampaign(campaign)} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-teal-200 hover:bg-white/5">Load</button>
+                                        <button type="button" onClick={() => deleteCampaign(campaign.id)} className="rounded-lg border border-red-300/10 px-3 py-1.5 text-xs text-red-200 hover:bg-red-300/10">Delete</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
