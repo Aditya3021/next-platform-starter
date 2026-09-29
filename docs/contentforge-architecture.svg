@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+<rect width="1200" height="720" rx="28" fill="#020617"/>
+<text x="60" y="70" fill="#99f6e4" font-family="Arial,sans-serif" font-size="20" font-weight="700">CONTENTFORGE AI</text>
+<text x="60" y="112" fill="#f8fafc" font-family="Arial,sans-serif" font-size="38" font-weight="800">Generative Content Workflow</text>
+<g font-family="Arial,sans-serif">
+<g fill="#0f172a" stroke="#5eead4" stroke-width="2">
+<rect x="60" y="180" width="220" height="110" rx="18"/><rect x="330" y="180" width="220" height="110" rx="18"/>
+<rect x="600" y="180" width="240" height="110" rx="18"/><rect x="890" y="180" width="250" height="110" rx="18"/>
+<rect x="180" y="410" width="250" height="110" rx="18"/><rect x="475" y="410" width="250" height="110" rx="18"/>
+<rect x="770" y="410" width="250" height="110" rx="18"/>
+</g>
+<g fill="#f8fafc" font-size="22" font-weight="700" text-anchor="middle">
+<text x="170" y="225">Campaign Brief</text><text x="440" y="225">Strategy</text>
+<text x="720" y="225">Generation Engine</text><text x="1015" y="225">Platform Assets</text>
+<text x="305" y="455">Quality Signals</text><text x="600" y="455">7-Day Calendar</text><text x="895" y="455">Persistence</text>
+</g>
+<g fill="#94a3b8" font-size="15" text-anchor="middle">
+<text x="170" y="253">topic • audience • goal</text><text x="440" y="253">intent + brand context</text>
+<text x="720" y="253">AI provider + fallback</text><text x="1015" y="253">Instagram • YouTube • LinkedIn • Blog</text>
+<text x="305" y="483">hook • fit • CTA</text><text x="600" y="483">publish-ready runway</text><text x="895" y="483">Supabase + local storage</text>
+</g>
+<g stroke="#2dd4bf" stroke-width="3" fill="none" stroke-linecap="round">
+<path d="M280 235h50"/><path d="M550 235h50"/><path d="M840 235h50"/>
+<path d="M1015 290v65q0 20-20 20H305q-20 0-20 35"/><path d="M430 465h45"/><path d="M725 465h45"/>
+</g>
+<g fill="#2dd4bf">
+<path d="M323 228l12 7-12 7z"/><path d="M593 228l12 7-12 7z"/><path d="M883 228l12 7-12 7z"/><path d="M292 402l7 12-7 12-7-12z"/><path d="M468 458l12 7-12 7z"/><path d="M763 458l12 7-12 7z"/>
+</g>
+</g>
+</svg>

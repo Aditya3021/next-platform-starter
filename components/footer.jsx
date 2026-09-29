@@ -1,16 +1,8 @@
-import Link from 'next/link';
-
 export function Footer() {
     return (
-        <footer className="pt-16 pb-12 sm:pt-24 sm:pb-16">
-            <p className="text-sm">
-                <Link
-                    href="https://docs.netlify.com/frameworks/next-js/overview/"
-                    className="decoration-dashed text-primary underline-offset-8"
-                >
-                    Next.js on Netlify
-                </Link>
-            </p>
+        <footer className="mt-16 flex flex-col gap-2 border-t border-white/10 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>ContentForge AI — one brief, an entire campaign.</p>
+            <p>Built for PS-02.</p>
         </footer>
     );
 }
