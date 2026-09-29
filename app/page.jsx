@@ -69,6 +69,7 @@ export default function Page() {
             if (data.avoid) setAvoid(data.avoid);
             if (Array.isArray(data.selectedPlatforms)) setSelectedPlatforms(data.selectedPlatforms);
             if (data.strategy) setStrategy(data.strategy);
+            if (data.strategy) setStrategy(data.strategy);
             if (Array.isArray(data.assets) && data.assets.length) setAssets(data.assets);
             if (data.generated) setGenerated(true);
             setStatus('Saved campaign restored');
@@ -292,15 +293,6 @@ export default function Page() {
         const anchor = document.createElement('a');
         anchor.href = url;
         anchor.download = 'contentforge-campaign.md';
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }
-
-        const blob = new Blob([campaignText], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = 'contentforge-campaign.txt';
         anchor.click();
         URL.revokeObjectURL(url);
     }
