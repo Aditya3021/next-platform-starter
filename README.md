@@ -1,41 +1,37 @@
-# Next.js on Netlify Platform Starter
+# ContentForge AI
 
-[Live Demo](https://nextjs-platform-starter.netlify.app/)
+ContentForge AI is a PS-02 hackathon MVP for **Generative Content Workflows**.
 
-A modern starter based on Next.js 14 (App Router), Tailwind, and [Netlify Core Primitives](https://docs.netlify.com/core/overview/#develop) (Edge Functions, Image CDN, Blob Store).
+## Product
 
-In this site, Netlify Core Primitives are used both implictly for running Next.js features (e.g. Route Handlers, image optimization via `next/image`, and more) and also explicitly by the user code.
+Turn one campaign brief into a structured multi-platform content workflow:
 
-Implicit usage means you're using any Next.js functionality and everything "just works" when deployed - all the plumbing is done for you. Explicit usage is framework-agnostic and typically provides more features than what Next.js exposes.
+**Idea → Strategy → Platform content → Quality feedback**
 
-## Deploying to Netlify
+The current branch contains a polished interactive prototype. The next implementation step is wiring the \`/api/generate\` workflow to an LLM provider and persisting campaigns.
 
-This site requires [Netlify Next Runtime v5](https://docs.netlify.com/frameworks/next-js/overview/) for full functionality. That version is now being gradually rolled out to all Netlify accounts.
+## Stack
 
-After deploying via the button below, please visit the **Site Overview** page for your new site to check whether it is already using the v5 runtime. If not, you'll be prompted to opt-in to to v5.
+- Next.js 15 App Router
+- React
+- Tailwind CSS v4
+- Netlify-compatible deployment
+- API route prepared at \`/api/generate\`
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/netlify-templates/next-platform-starter)
+## Local development
 
-## Developing Locally
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
 
-1. Clone this repository, then run `npm install` in its root directory.
+Open http://localhost:3000.
 
-2. For the starter to have full functionality locally (e.g. edge functions, blob store), please ensure you have an up-to-date version of Netlify CLI. Run:
+## Roadmap
 
-```
-npm install netlify-cli@latest -g
-```
-
-3. Link your local repository to the deployed Netlify site. This will ensure you're using the same runtime version for both local development and your deployed site.
-
-```
-netlify link
-```
-
-4. Then, run the Next.js development server via Netlify CLI:
-
-```
-netlify dev
-```
-
-If your browser doesn't navigate to the site automatically, visit [localhost:8888](http://localhost:8888).
+- [ ] Connect real LLM generation
+- [ ] Brand Memory
+- [ ] Persistent campaign history
+- [ ] Export to Markdown/CSV
+- [ ] Real quality evaluation
+- [ ] Authentication and team workspaces
