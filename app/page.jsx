@@ -82,7 +82,7 @@ export default function Page() {
         };
         localStorage.setItem('contentforge-campaign', JSON.stringify({ ...payload, generated: true, savedAt: new Date().toISOString() }));
         try {
-            if (!user) { setHistory([]); setCloudMode(false); setHistoryLoading(false); return; }
+            if (!currentUser) { setHistory([]); setCloudMode(false); setHistoryLoading(false); return; }
             const response = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -122,7 +122,7 @@ export default function Page() {
                 setUser(data.user);
                 setAuthPassword('');
                 setAuthMessage(authMode === 'signup' && data.needsConfirmation ? 'Check your email to confirm your account.' : 'Signed in.');
-                loadHistory();
+                loadHistory(data.user);
             } else {
                 setAuthMessage('Account created. Check your email if confirmation is enabled.');
             }
@@ -141,7 +141,7 @@ export default function Page() {
         setStatus('Signed out');
     }
 
-    async function loadHistory() {
+    async function loadHistory(currentUser = user) {
         setHistoryLoading(true);
         try {
             const response = await fetch('/api/campaigns', { cache: 'no-store' });
