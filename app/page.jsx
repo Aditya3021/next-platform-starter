@@ -41,12 +41,15 @@ export default function Page() {
     const [activeAsset, setActiveAsset] = useState(0);
     const [regenerating, setRegenerating] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [campaignId, setCampaignId] = useState(null);
+    const [cloudMode, setCloudMode] = useState(false);
 
     useEffect(() => {
         try {
             const savedCampaign = localStorage.getItem('contentforge-campaign');
             if (!savedCampaign) return;
             const data = JSON.parse(savedCampaign);
+            if (data.id) setCampaignId(data.id);
             if (data.topic) setTopic(data.topic);
             if (data.audience) setAudience(data.audience);
             if (data.goal) setGoal(data.goal);
@@ -59,11 +62,26 @@ export default function Page() {
         } catch {}
     }, []);
 
-    function saveCampaign(nextAssets = assets) {
-        localStorage.setItem('contentforge-campaign', JSON.stringify({
-            topic, audience, goal, brandTone, avoid, selectedPlatforms,
-            assets: nextAssets, generated: true, savedAt: new Date().toISOString(),
-        }));
+    async function saveCampaign(nextAssets = assets) {
+        const payload = {
+            id: campaignId,
+            name: topic || 'Untitled campaign',
+            topic, audience, goal, brandTone, avoid,
+            selectedPlatforms, assets: nextAssets,
+        };
+        localStorage.setItem('contentforge-campaign', JSON.stringify({ ...payload, generated: true, savedAt: new Date().toISOString() }));
+        try {
+            const response = await fetch('/api/campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+            if (response.ok && data.campaign?.id) {
+                setCampaignId(data.campaign.id);
+                setCloudMode(data.mode === 'supabase');
+            }
+        } catch {}
         setSaved(true);
         setTimeout(() => setSaved(false), 1800);
     }
@@ -174,7 +192,7 @@ export default function Page() {
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Campaign brief</p>
                             <h2 className="mt-1 text-xl font-bold">Create your workflow</h2>
                         </div>
-                        <span className="rounded-full bg-teal-300/10 px-3 py-1 text-xs text-teal-200">{status}</span>
+                        <span className="rounded-full bg-teal-300/10 px-3 py-1 text-xs text-teal-200">{cloudMode ? 'Cloud saved' : status}</span>
                     </div>
 
                     <label className="block text-sm font-medium text-slate-200">What are you promoting?</label>
