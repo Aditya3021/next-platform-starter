@@ -17,12 +17,12 @@ function fallbackAssets(topic, audience, goal, brandTone) {
     return starterAssets.map((asset, index) => ({
         ...asset,
         body: index === 0
-            ? \`Hook: “\${cleanTopic} is changing how \${cleanAudience} create.” Build the story around the problem, the new approach, and one clear next step. Tone: \${tone}.\`
+            ? `Hook: “${cleanTopic} is changing how ${cleanAudience} create.” Build the story around the problem, the new approach, and one clear next step. Tone: ${tone}.`
             : index === 1
-                ? \`For \${cleanAudience}: \${cleanTopic} becomes a focused campaign rather than disconnected posts. Primary objective: \${goal.toLowerCase()}.\`
+                ? `For ${cleanAudience}: ${cleanTopic} becomes a focused campaign rather than disconnected posts. Primary objective: ${goal.toLowerCase()}.`
                 : index === 2
-                    ? \`Create a fast, practical video explaining \${cleanTopic}. Open with the outcome, show the workflow in three steps, and close with a CTA aligned to \${goal.toLowerCase()}.\`
-                    : \`Publish a search-friendly guide about \${cleanTopic}, written for \${cleanAudience}. Structure it around the problem, workflow, examples and measurable next steps.\`,
+                    ? `Create a fast, practical video explaining ${cleanTopic}. Open with the outcome, show the workflow in three steps, and close with a CTA aligned to ${goal.toLowerCase()}.`
+                    : `Publish a search-friendly guide about ${cleanTopic}, written for ${cleanAudience}. Structure it around the problem, workflow, examples and measurable next steps.`,
         scores: { hook: 82, fit: 89, cta: 84 },
     }));
 }
@@ -195,7 +195,7 @@ export default function Page() {
 
     const active = assets[activeAsset] || assets[0];
     const campaignText = useMemo(
-        () => assets.map((item) => \`Day \${item.day} — \${item.platform}\\n\${item.title}\\n\${item.body}\`).join('\\n\\n'),
+        () => assets.map((item) => `Day ${item.day} — ${item.platform}\\n${item.title}\\n${item.body}`).join('\\n\\n'),
         [assets]
     );
 
@@ -375,7 +375,7 @@ export default function Page() {
                                 const activePlatform = selectedPlatforms.includes(platform);
                                 return (
                                     <button type="button" key={platform} onClick={() => togglePlatform(platform)}
-                                        className={\`rounded-xl border px-3 py-2 text-sm transition \${activePlatform ? 'border-teal-300/50 bg-teal-300/10 text-teal-200' : 'border-white/10 bg-white/5 text-slate-400'}\`}>
+                                        className={`rounded-xl border px-3 py-2 text-sm transition ${activePlatform ? 'border-teal-300/50 bg-teal-300/10 text-teal-200' : 'border-white/10 bg-white/5 text-slate-400'}`}>
                                         {activePlatform ? '✓ ' : ''}{platform}
                                     </button>
                                 );
@@ -405,7 +405,7 @@ export default function Page() {
                     <div className="space-y-2">
                         {assets.map((asset, index) => (
                             <button type="button" key={asset.day} onClick={() => setActiveAsset(index)}
-                                className={\`w-full rounded-2xl border p-4 text-left transition \${activeAsset === index ? 'border-teal-300/40 bg-teal-300/10' : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'}\`}>
+                                className={`w-full rounded-2xl border p-4 text-left transition ${activeAsset === index ? 'border-teal-300/40 bg-teal-300/10' : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'}`}>
                                 <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Day {asset.day}</span><span className="text-xs text-teal-200">{asset.platform}</span></div>
                                 <p className="mt-2 font-semibold">{asset.title}</p>
                             </button>
@@ -431,7 +431,7 @@ export default function Page() {
                                 <p className="text-xs uppercase tracking-wider text-slate-500">Quality signals</p>
                                 <div className="mt-4 space-y-3">
                                     {[['Hook strength', active.scores?.hook ?? 82], ['Platform fit', active.scores?.fit ?? 89], ['CTA clarity', active.scores?.cta ?? 84]].map(([label, score]) => (
-                                        <div key={label}><div className="mb-1 flex justify-between text-xs"><span className="text-slate-400">{label}</span><span>{score}/100</span></div><div className="h-1.5 rounded-full bg-white/10"><div className="h-1.5 rounded-full bg-teal-300" style={{ width: \`\${score}%\` }} /></div></div>
+                                        <div key={label}><div className="mb-1 flex justify-between text-xs"><span className="text-slate-400">{label}</span><span>{score}/100</span></div><div className="h-1.5 rounded-full bg-white/10"><div className="h-1.5 rounded-full bg-teal-300" style={{ width: `${score}%` }} /></div></div>
                                     ))}
                                 </div>
                             </div>
