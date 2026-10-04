@@ -1,553 +1,61 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {useMemo,useState} from 'react';
 
-const platforms = ['Instagram', 'YouTube', 'LinkedIn', 'Blog'];
-const starterAssets = [
-    { day: 1, platform: 'Instagram', type: 'Reel', title: 'The 30-second hook', meta: 'Hook • Voiceover • CTA' },
-    { day: 2, platform: 'LinkedIn', type: 'Post', title: 'One idea, multiple channels', meta: 'Professional tone • Lead CTA' },
-    { day: 3, platform: 'YouTube', type: 'Short', title: 'From brief to publish-ready', meta: 'Search title • Script • Thumbnail' },
-    { day: 4, platform: 'Blog', type: 'SEO article', title: 'The content workflow playbook', meta: 'SEO outline • Keywords • Meta' },
+const lessons = [
+  {id:'arrays',title:'Arrays',text:'An array stores ordered values in contiguous indexed positions. Access by index is constant time, while inserting in the middle may require shifting elements.',tags:['array','index','contiguous','access','insert']},
+  {id:'hash',title:'Hash Tables',text:'A hash table maps keys to buckets using a hash function. With a good hash function, lookup, insert, and delete are expected constant time.',tags:['hash','table','key','bucket','lookup','hashing']},
+  {id:'graphs',title:'Graphs',text:'A graph contains vertices and edges. Breadth first search explores level by level and is useful for shortest paths in unweighted graphs.',tags:['graph','vertex','edge','bfs','shortest','path']},
+  {id:'recursion',title:'Recursion',text:'Recursion solves a problem by calling the same procedure on a smaller input and must include a base case that stops the calls.',tags:['recursion','base','case','function','smaller']},
 ];
 
-function fallbackAssets(topic, audience, goal, brandTone) {
-    const cleanTopic = topic.trim() || 'an AI product launch';
-    const cleanAudience = audience.trim() || 'modern creators';
-    const tone = brandTone.trim() || 'clear and energetic';
-    return starterAssets.map((asset, index) => ({
-        ...asset,
-        body: index === 0
-            ? `Hook: “${cleanTopic} is changing how ${cleanAudience} create.” Build the story around the problem, the new approach, and one clear next step. Tone: ${tone}.`
-            : index === 1
-                ? `For ${cleanAudience}: ${cleanTopic} becomes a focused campaign rather than disconnected posts. Primary objective: ${goal.toLowerCase()}.`
-                : index === 2
-                    ? `Create a fast, practical video explaining ${cleanTopic}. Open with the outcome, show the workflow in three steps, and close with a CTA aligned to ${goal.toLowerCase()}.`
-                    : `Publish a search-friendly guide about ${cleanTopic}, written for ${cleanAudience}. Structure it around the problem, workflow, examples and measurable next steps.`,
-        scores: { hook: 82, fit: 89, cta: 84 },
-    }));
+const quizBank = [
+  {q:'Which operation is typically O(1) for an array?',options:['Access by index','Insert at the beginning','Delete from the middle','Search an unsorted array'],answer:0,lesson:'arrays'},
+  {q:'What does a hash function help determine?',options:['A graph edge','A bucket for a key','A recursion base case','An array length'],answer:1,lesson:'hash'},
+  {q:'BFS explores a graph primarily...',options:['Randomly','From deepest node first','Level by level','By sorting vertices'],answer:2,lesson:'graphs'},
+  {q:'What prevents recursive calls from continuing forever?',options:['A bucket','A base case','An index','A vertex'],answer:1,lesson:'recursion'},
+];
+
+function tokenize(s){return s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\\s+/).filter(Boolean);}
+function score(query,lesson){
+  const q=new Set(tokenize(query)); const words=[...tokenize(lesson.text+' '+lesson.tags.join(' '))];
+  const unique=[...new Set(words)]; return unique.filter(w=>q.has(w)).length/(Math.sqrt(unique.length)||1);
 }
 
-export default function Page() {
-    const [topic, setTopic] = useState('AI-powered fitness app');
-    const [audience, setAudience] = useState('college students');
-    const [goal, setGoal] = useState('Generate awareness');
-    const [brandTone, setBrandTone] = useState('Energetic + professional');
-    const [avoid, setAvoid] = useState('Overly technical language');
-    const [selectedPlatforms, setSelectedPlatforms] = useState(platforms.slice(0, 3));
-    const [assets, setAssets] = useState(() => fallbackAssets(topic, audience, goal, brandTone));
-    const [generated, setGenerated] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState('Prototype mode');
-    const [activeAsset, setActiveAsset] = useState(0);
-    const [regenerating, setRegenerating] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [campaignId, setCampaignId] = useState(null);
-    const [cloudMode, setCloudMode] = useState(false);
-    const [history, setHistory] = useState([]);
-    const [historyLoading, setHistoryLoading] = useState(false);
-    const [historyOpen, setHistoryOpen] = useState(false);
-    const [user, setUser] = useState(null);
-    const [authMode, setAuthMode] = useState('login');
-    const [authEmail, setAuthEmail] = useState('');
-    const [authPassword, setAuthPassword] = useState('');
-    const [authBusy, setAuthBusy] = useState(false);
-    const [authMessage, setAuthMessage] = useState('');
-    const [strategy, setStrategy] = useState({ angle: 'A focused campaign built around one consistent idea.' });
+export default function Page(){
+ const [query,setQuery]=useState('');
+ const [answer,setAnswer]=useState(null);
+ const [selected,setSelected]=useState(0);
+ const [quiz,setQuiz]=useState(null);
+ const [choice,setChoice]=useState(null);
+ const [scoreCount,setScoreCount]=useState(0);
+ const ranked=useMemo(()=>lessons.map(l=>({...l,s:score(query,l)})).sort((a,b)=>b.s-a.s),[query]);
 
-    useEffect(() => {
-        loadAuth();
-        loadHistory();
-        try {
-            const savedCampaign = localStorage.getItem('contentforge-campaign');
-            if (!savedCampaign) return;
-            const data = JSON.parse(savedCampaign);
-            if (data.id) setCampaignId(data.id);
-            if (data.topic) setTopic(data.topic);
-            if (data.audience) setAudience(data.audience);
-            if (data.goal) setGoal(data.goal);
-            if (data.brandTone) setBrandTone(data.brandTone);
-            if (data.avoid) setAvoid(data.avoid);
-            if (Array.isArray(data.selectedPlatforms)) setSelectedPlatforms(data.selectedPlatforms);
-            if (data.strategy) setStrategy(data.strategy);
-            if (data.strategy) setStrategy(data.strategy);
-            if (Array.isArray(data.assets) && data.assets.length) setAssets(data.assets);
-            if (data.generated) setGenerated(true);
-            setStatus('Saved campaign restored');
-        } catch {}
-    }, []);
-
-    async function saveCampaign(nextAssets = assets) {
-        const payload = {
-            id: campaignId,
-            name: topic || 'Untitled campaign',
-            topic, audience, goal, brandTone, avoid,
-            selectedPlatforms, assets: nextAssets,
-        };
-        localStorage.setItem('contentforge-campaign', JSON.stringify({ ...payload, generated: true, savedAt: new Date().toISOString() }));
-        try {
-            if (!user) { setCloudMode(false); setSaved(true); setTimeout(() => setSaved(false), 1800); return; }
-            const response = await fetch('/api/campaigns', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            const data = await response.json();
-            if (response.ok && data.campaign?.id) {
-                setCampaignId(data.campaign.id);
-                setCloudMode(data.mode === 'supabase');
-            }
-        } catch {}
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1800);
-    }
-
-    async function loadAuth() {
-        try {
-            const response = await fetch('/api/auth', { cache: 'no-store' });
-            const data = await response.json();
-            if (data.authenticated) setUser(data.user);
-        } catch {}
-    }
-
-    async function authenticate(event) {
-        event.preventDefault();
-        setAuthBusy(true);
-        setAuthMessage('');
-        try {
-            const response = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: authMode, email: authEmail, password: authPassword }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Authentication failed');
-            if (data.user) {
-                setUser(data.user);
-                setAuthPassword('');
-                setAuthMessage(authMode === 'signup' && data.needsConfirmation ? 'Check your email to confirm your account.' : 'Signed in.');
-                loadHistory(data.user);
-            } else {
-                setAuthMessage('Account created. Check your email if confirmation is enabled.');
-            }
-        } catch (error) {
-            setAuthMessage(error.message);
-        } finally {
-            setAuthBusy(false);
-        }
-    }
-
-    async function signOut() {
-        await fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
-        setUser(null);
-        setHistory([]);
-        setCloudMode(false);
-        setStatus('Signed out');
-    }
-
-    async function loadHistory(currentUser = user) {
-        setHistoryLoading(true);
-        try {
-            const response = await fetch('/api/campaigns', { cache: 'no-store' });
-            const data = await response.json();
-            if (response.ok && Array.isArray(data.campaigns)) {
-                setHistory(data.campaigns);
-                setCloudMode(data.mode === 'supabase');
-            }
-        } catch {} finally {
-            setHistoryLoading(false);
-        }
-    }
-
-    function loadCampaign(campaign) {
-        setCampaignId(campaign.id);
-        setTopic(campaign.topic || '');
-        setAudience(campaign.audience || '');
-        setGoal(campaign.goal || 'Generate awareness');
-        setBrandTone(campaign.brand_tone || '');
-        setAvoid(campaign.avoid || '');
-        setSelectedPlatforms(Array.isArray(campaign.platforms) ? campaign.platforms : platforms.slice(0, 3));
-        setAssets(Array.isArray(campaign.assets) && campaign.assets.length ? campaign.assets : fallbackAssets(campaign.topic || '', campaign.audience || '', campaign.goal || '', campaign.brand_tone || ''));
-        setGenerated(true);
-        setActiveAsset(0);
-        setHistoryOpen(false);
-        setStatus('Campaign loaded');
-        localStorage.setItem('contentforge-campaign', JSON.stringify({
-            id: campaign.id, topic: campaign.topic, audience: campaign.audience,
-            goal: campaign.goal, brandTone: campaign.brand_tone, avoid: campaign.avoid,
-            selectedPlatforms: campaign.platforms, assets: campaign.assets, generated: true,
-        }));
-    }
-
-    async function deleteCampaign(id) {
-        if (!id) return;
-        try {
-            const response = await fetch('/api/campaigns/' + id, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Delete failed');
-            setHistory((current) => current.filter((item) => item.id !== id));
-            if (campaignId === id) {
-                setCampaignId(null);
-                setStatus('Campaign deleted');
-            }
-        } catch {
-            setStatus('Could not delete campaign');
-        }
-    }
-
-    const active = assets[activeAsset] || assets[0];
-    const campaignText = useMemo(
-        () => assets.map((item) => `Day ${item.day} — ${item.platform}\\n${item.title}\\n${item.body}`).join('\\n\\n'),
-        [assets]
-    );
-
-    function togglePlatform(platform) {
-        setSelectedPlatforms((current) =>
-            current.includes(platform) ? current.filter((item) => item !== platform) : [...current, platform]
-        );
-    }
-
-    async function generateCampaign() {
-        setLoading(true);
-        setStatus('Generating workflow…');
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    topic, audience, goal,
-                    brand: { tone: brandTone, avoid },
-                    platforms: selectedPlatforms,
-                }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Generation failed');
-            if (Array.isArray(data.assets) && data.assets.length) setAssets(data.assets);
-            setStatus(data.mode === 'ai' ? 'AI workflow generated' : 'Demo workflow generated');
-            setGenerated(true);
-            setActiveAsset(0);
-            saveCampaign(data.assets || assets);
-        } catch {
-            setStrategy({ angle: 'A focused campaign built from the campaign brief.' });
-            setAssets(fallbackAssets(topic, audience, goal, brandTone));
-            setStatus('Demo workflow — API unavailable');
-            setGenerated(true);
-            setActiveAsset(0);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    async function regenerateActiveAsset() {
-        if (!active) return;
-        setRegenerating(true);
-        setStatus('Regenerating asset…');
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, audience, goal, brand: { tone: brandTone, avoid }, platforms: [active.platform], regenerate: true }),
-            });
-            const data = await response.json();
-            if (!response.ok || !data.assets?.length) throw new Error('Regeneration failed');
-            const replacement = { ...data.assets[0], day: active.day };
-            const next = assets.map((item, index) => index === activeAsset ? replacement : item);
-            setAssets(next);
-            saveCampaign(next);
-            setStatus(data.mode === 'ai' ? 'Asset regenerated with AI' : 'Asset regenerated in demo mode');
-        } catch {
-            const next = fallbackAssets(topic, audience, goal, brandTone);
-            setAssets(next);
-            saveCampaign(next);
-            setStatus('Asset regenerated in demo mode');
-        } finally { setRegenerating(false); }
-    }
-
-    function copyCampaign() {
-        navigator.clipboard?.writeText(campaignText);
-    }
-
-    function downloadCampaign() {
-        const safe = (value) => String(value ?? '').replace(/"/g, '""');
-        const rows = [['Day', 'Platform', 'Type', 'Title', 'Body', 'Hook', 'Fit', 'CTA']];
-        assets.forEach((item) => rows.push([
-            item.day, item.platform, item.type, item.title, item.body,
-            item.scores?.hook ?? '', item.scores?.fit ?? '', item.scores?.cta ?? '',
-        ]));
-        const csv = rows.map((row) => row.map((value) => '"' + safe(value) + '"').join(',')).join('\\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = 'contentforge-campaign.csv';
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function downloadText() {
-        const blob = new Blob([campaignText], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = 'contentforge-campaign.txt';
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function downloadMarkdown() {
-        const markdown = '# ' + (topic || 'ContentForge Campaign') + '\\n\\n'
-            + '**Audience:** ' + audience + '\\n\\n'
-            + '**Goal:** ' + goal + '\\n\\n'
-            + '**Strategy:** ' + (strategy.angle || 'Multi-platform campaign workflow') + '\\n\\n'
-            + assets.map((item) => '## Day ' + item.day + ' — ' + item.platform + '\\n\\n'
-                + '**' + item.type + ':** ' + item.title + '\\n\\n' + item.body + '\\n').join('\\n');
-        const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = 'contentforge-campaign.md';
-        anchor.click();
-        URL.revokeObjectURL(url);
-    }
-
-    return (
-        <div className="pb-16">
-            <section className="grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
-                <div>
-                    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-teal-200">
-                        <span className="h-2 w-2 rounded-full bg-teal-300" /> Generative Content Workflow
-                    </div>
-                    <h1 className="max-w-3xl text-5xl font-black tracking-tight sm:text-6xl">
-                        One idea.<span className="block text-teal-300">An entire campaign.</span>
-                    </h1>
-                    <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                        ContentForge turns a campaign brief into platform-ready content, a publishing plan and an explainable quality check — all inside one workflow.
-                    </p>
-                    <div className="mt-7 flex flex-wrap gap-3 text-sm text-slate-300">
-                        {['Strategy first', 'Multi-platform', 'Brand memory', 'Quality feedback'].map((item) => (
-                            <span key={item} className="rounded-full bg-white/8 px-3 py-2">{item}</span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur">
-                    <div className="mb-5 flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Campaign brief</p>
-                            <h2 className="mt-1 text-xl font-bold">Create your workflow</h2>
-                        </div>
-                        <span className="rounded-full bg-teal-300/10 px-3 py-1 text-xs text-teal-200">{cloudMode ? 'Cloud saved' : status}</span>
-                    </div>
-
-                    <label className="block text-sm font-medium text-slate-200">What are you promoting?</label>
-                    <input value={topic} onChange={(event) => setTopic(event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none ring-teal-300/30 focus:ring-4" />
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-200">Target audience</label>
-                            <input value={audience} onChange={(event) => setAudience(event.target.value)}
-                                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-200">Primary goal</label>
-                            <select value={goal} onChange={(event) => setGoal(event.target.value)}
-                                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none">
-                                <option>Generate awareness</option><option>Generate leads</option><option>Drive conversions</option><option>Build community</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-200">Brand tone</label>
-                            <input value={brandTone} onChange={(event) => setBrandTone(event.target.value)}
-                                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-200">Avoid</label>
-                            <input value={avoid} onChange={(event) => setAvoid(event.target.value)}
-                                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
-                        </div>
-                    </div>
-
-                    <div className="mt-4">
-                        <p className="text-sm font-medium text-slate-200">Platforms</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {platforms.map((platform) => {
-                                const activePlatform = selectedPlatforms.includes(platform);
-                                return (
-                                    <button type="button" key={platform} onClick={() => togglePlatform(platform)}
-                                        className={`rounded-xl border px-3 py-2 text-sm transition ${activePlatform ? 'border-teal-300/50 bg-teal-300/10 text-teal-200' : 'border-white/10 bg-white/5 text-slate-400'}`}>
-                                        {activePlatform ? '✓ ' : ''}{platform}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <button type="button" onClick={generateCampaign} disabled={loading}
-                        className="mt-6 w-full rounded-xl bg-teal-300 px-5 py-3.5 font-bold text-slate-950 transition hover:bg-teal-200 disabled:cursor-wait disabled:opacity-60">
-                        {loading ? 'Generating…' : generated ? 'Regenerate campaign' : 'Generate campaign'} →
-                    </button>
-                    <p className="mt-3 text-center text-xs text-slate-500">Set AI_API_KEY on the server to enable real generation; otherwise the demo fallback runs.</p>
-                </div>
-            </section>
-
-            <section className="mt-16">
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Workflow output</p><h2 className="mt-2 text-3xl font-black">Campaign command center</h2></div>
-                    <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={copyCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Copy</button>
-                        <button type="button" onClick={() => saveCampaign()} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-teal-200 hover:bg-white/10">{saved ? 'Saved' : 'Save campaign'}</button>
-                        <button type="button" onClick={downloadCampaign} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export CSV</button><button type="button" onClick={downloadMarkdown} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export MD</button><button type="button" onClick={downloadText} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">Export TXT</button>
-                    </div>
-                </div>
-
-                <div className="mt-7 grid gap-6 lg:grid-cols-[250px_1fr]">
-                    <div className="space-y-2">
-                        {assets.map((asset, index) => (
-                            <button type="button" key={asset.day} onClick={() => setActiveAsset(index)}
-                                className={`w-full rounded-2xl border p-4 text-left transition ${activeAsset === index ? 'border-teal-300/40 bg-teal-300/10' : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07]'}`}>
-                                <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Day {asset.day}</span><span className="text-xs text-teal-200">{asset.platform}</span></div>
-                                <p className="mt-2 font-semibold">{asset.title}</p>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-6">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <div className="flex items-center gap-2"><span className="rounded-full bg-teal-300/10 px-2.5 py-1 text-xs font-semibold text-teal-200">{active.platform}</span><span className="text-xs text-slate-500">{active.type}</span></div>
-                                <h3 className="mt-3 text-2xl font-bold">{active.title}</h3>
-                            </div>
-                            <div className="flex gap-2">
-                                <button type="button" onClick={regenerateActiveAsset} disabled={regenerating} className="rounded-xl bg-teal-300 px-3 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{regenerating ? 'Regenerating…' : 'Regenerate'}</button>
-                                <button type="button" onClick={() => navigator.clipboard?.writeText(active.body)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5">Copy asset</button>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 rounded-2xl bg-slate-950/60 p-5 text-slate-200"><p className="leading-7">{active.body}</p></div>
-
-                        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                <p className="text-xs uppercase tracking-wider text-slate-500">Quality signals</p>
-                                <div className="mt-4 space-y-3">
-                                    {[['Hook strength', active.scores?.hook ?? 82], ['Platform fit', active.scores?.fit ?? 89], ['CTA clarity', active.scores?.cta ?? 84]].map(([label, score]) => (
-                                        <div key={label}><div className="mb-1 flex justify-between text-xs"><span className="text-slate-400">{label}</span><span>{score}/100</span></div><div className="h-1.5 rounded-full bg-white/10"><div className="h-1.5 rounded-full bg-teal-300" style={{ width: `${score}%` }} /></div></div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                <p className="text-xs uppercase tracking-wider text-slate-500">Brand memory</p>
-                                <div className="mt-4 space-y-3 text-sm">
-                                    <div className="flex justify-between gap-3"><span className="text-slate-500">Tone</span><span className="text-right">{brandTone}</span></div>
-                                    <div className="flex justify-between gap-3"><span className="text-slate-500">Avoid</span><span className="text-right">{avoid}</span></div>
-                                    <div className="flex justify-between"><span className="text-slate-500">Goal</span><span>{goal}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                        <p className="mt-5 text-xs text-slate-500">{active.meta}</p>
-                    </div>
-                </div>
-            </section>
-
-            <section className="mt-8">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Workspace identity</p>
-                            <h2 className="mt-2 text-2xl font-black">{user ? 'Signed-in workspace' : 'Sign in for cloud campaigns'}</h2>
-                            <p className="mt-1 text-sm text-slate-500">{user ? user.email : 'Your campaigns are scoped to your authenticated account.'}</p>
-                        </div>
-                        {user && <button type="button" onClick={signOut} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Sign out</button>}
-                    </div>
-                    {!user && (
-                        <form onSubmit={authenticate} className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                            <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="Email" className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
-                            <input type="password" required minLength={6} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="Password (6+ characters)" className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none" />
-                            <button type="submit" disabled={authBusy} className="rounded-xl bg-teal-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-50">{authBusy ? 'Working…' : authMode === 'login' ? 'Sign in' : 'Create account'}</button>
-                        </form>
-                    )}
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        {!user && <button type="button" onClick={() => setAuthMode((mode) => mode === 'login' ? 'signup' : 'login')} className="text-teal-200 hover:underline">{authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button>}
-                        {authMessage && <span>{authMessage}</span>}
-                    </div>
-                </div>
-            </section>
-
-            <section className="mt-10">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Campaign workspace</p>
-                            <h2 className="mt-2 text-2xl font-black">Saved campaigns</h2>
-                            <p className="mt-1 text-sm text-slate-500">Load previous campaigns, continue editing, or remove old drafts.</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button type="button" onClick={() => { setHistoryOpen((value) => !value); if (!historyOpen) loadHistory(); }} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 hover:bg-white/10">
-                                {historyOpen ? 'Hide history' : 'Open history'} {history.length ? '(' + history.length + ')' : ''}
-                            </button>
-                            <button type="button" onClick={loadHistory} disabled={historyLoading} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-teal-200 disabled:opacity-50">
-                                {historyLoading ? 'Refreshing…' : 'Refresh'}
-                            </button>
-                        </div>
-                    </div>
-                    {historyOpen && (
-                        <div className="mt-5 space-y-2">
-                            {!historyLoading && !history.length && (
-                                <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">
-                                    No cloud campaigns yet. Save a campaign to build your history.
-                                </div>
-                            )}
-                            {history.map((campaign) => (
-                                <div key={campaign.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <button type="button" onClick={() => loadCampaign(campaign)} className="min-w-0 text-left">
-                                        <p className="truncate font-semibold text-white">{campaign.name || campaign.topic || 'Untitled campaign'}</p>
-                                        <p className="mt-1 text-xs text-slate-500">{campaign.audience || 'No audience'} · {campaign.goal || 'No goal'} · {Array.isArray(campaign.assets) ? campaign.assets.length : 0} assets</p>
-                                    </button>
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <span className="text-xs text-slate-600">{campaign.updated_at ? new Date(campaign.updated_at).toLocaleDateString() : ''}</span>
-                                        <button type="button" onClick={() => loadCampaign(campaign)} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-teal-200 hover:bg-white/5">Load</button>
-                                        <button type="button" onClick={() => deleteCampaign(campaign.id)} className="rounded-lg border border-red-300/10 px-3 py-1.5 text-xs text-red-200 hover:bg-red-300/10">Delete</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            <section className="mt-8">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Assets</p><p className="mt-2 text-3xl font-black">{assets.length}</p><p className="mt-1 text-xs text-slate-500">platform-ready pieces</p></div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Platforms</p><p className="mt-2 text-3xl font-black">{new Set(assets.map((item) => item.platform)).size}</p><p className="mt-1 text-xs text-slate-500">channels covered</p></div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Avg quality</p><p className="mt-2 text-3xl font-black">{assets.length ? Math.round(assets.reduce((sum, item) => sum + (Number(item.scores?.hook ?? 0) + Number(item.scores?.fit ?? 0) + Number(item.scores?.cta ?? 0)) / 3, 0) / assets.length) : 0}<span className="text-base text-slate-500">/100</span></p><p className="mt-1 text-xs text-slate-500">across quality signals</p></div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><p className="text-xs uppercase tracking-wider text-slate-500">Strategy</p><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">{strategy.angle}</p></div>
-                </div>
-            </section>
-
-            <section className="mt-16">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-                    <div className="flex flex-wrap items-end justify-between gap-4">
-                        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-300">Publishing calendar</p><h2 className="mt-2 text-3xl font-black">7-day campaign runway</h2></div>
-                        <span className="text-sm text-slate-500">Drag-free MVP calendar</span>
-                    </div>
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        {Array.from({ length: 7 }, (_, index) => {
-                            const asset = assets[index % assets.length];
-                            return <button type="button" key={index} onClick={() => setActiveAsset(index % assets.length)} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-left hover:border-teal-300/30">
-                                <p className="text-xs font-bold text-teal-300">DAY {index + 1}</p>
-                                <p className="mt-2 font-semibold">{asset?.platform || 'Content'}</p>
-                                <p className="mt-1 text-sm text-slate-400">{asset?.title || 'Campaign asset'}</p>
-                            </button>;
-                        })}
-                    </div>
-                </div>
-            </section>
-
-            <section className="mt-16 grid gap-4 sm:grid-cols-3">
-                {[['01', 'Understand', 'Strategy interprets audience, goal and brand context.'], ['02', 'Generate', 'Platform workflows transform strategy into channel-native assets.'], ['03', 'Improve', 'Quality checks surface weak hooks, CTAs and platform-fit gaps.']].map(([number, title, copy]) => (
-                    <div key={number} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><span className="text-xs font-bold text-teal-300">{number}</span><h3 className="mt-3 text-lg">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{copy}</p></div>
-                ))}
-            </section>
-        </div>
-    );
+ function teach(){
+   const best=ranked[0];
+   if(!query.trim()){setAnswer({title:'Ask me anything from the lesson set',body:'Try “Why is hash lookup fast?” or “How does BFS find a shortest path?”'});return;}
+   setAnswer({title:best.title,body:best.s>0.18?best.text:'I could not confidently match that question to the current lesson set. Try adding a concept such as array, hash table, graph, BFS, or recursion.'});
+ }
+ function makeQuiz(){
+   const pool=selected===0?quizBank:quizBank.filter(x=>x.lesson===lessons[selected-1]?.id);
+   setQuiz(pool[Math.floor(Math.random()*pool.length)]);setChoice(null);
+ }
+ function submit(){
+   if(choice===null||!quiz)return;
+   if(choice===quiz.answer)setScoreCount(s=>s+1);
+ }
+ return <main>
+ <style jsx>{`
+ *{box-sizing:border-box}main{min-height:100vh;background:#071018;color:#eef7ff;font-family:Inter,system-ui,sans-serif;padding:28px 5% 70px}.nav{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #213244;padding-bottom:18px}.brand{font-size:20px;font-weight:900}.tag{font-size:11px;color:#6ee7b7;letter-spacing:1.4px}.hero{max-width:950px;padding:58px 0 30px}.eyebrow{color:#6ee7b7;font-size:11px;font-weight:900;letter-spacing:2px}.hero h1{font-size:clamp(42px,7vw,76px);line-height:.96;letter-spacing:-4px;margin:9px 0 18px}.hero p{max-width:760px;color:#9fb2c5;font-size:17px;line-height:1.6}.grid{display:grid;grid-template-columns:1.35fr .8fr;gap:16px}.card{background:#0c1825;border:1px solid #213548;border-radius:18px;padding:20px}.label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6f8ba5;font-weight:800}.input{width:100%;margin-top:12px;background:#08131e;border:1px solid #294057;color:#fff;border-radius:12px;padding:15px;font-size:15px;outline:none}.btn{margin-top:10px;border:0;border-radius:10px;padding:11px 15px;background:#6ee7b7;color:#06120e;font-weight:900;cursor:pointer}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.chip{border:1px solid #294057;background:#101f2f;color:#9fb6cc;border-radius:999px;padding:7px 10px;cursor:pointer}.chip.active{background:#6ee7b7;color:#06120e}.answer{margin-top:18px;border-left:3px solid #6ee7b7;padding:14px;background:#0a1622}.answer h2{margin:0 0 8px}.answer p{color:#b8c8d8;line-height:1.6}.lesson{padding:14px 0;border-top:1px solid #203143}.lesson b{font-size:14px}.lesson p{color:#879eb4;font-size:12px;line-height:1.5}.quiz{margin-top:16px}.option{display:block;width:100%;text-align:left;margin:8px 0;padding:11px;border-radius:10px;border:1px solid #294057;background:#0a1622;color:#d9e8f5;cursor:pointer}.option.sel{border-color:#6ee7b7}.small{font-size:11px;color:#7890a6;margin-top:10px;line-height:1.5}@media(max-width:850px){.grid{grid-template-columns:1fr}.hero h1{letter-spacing:-2px}}`}</style>
+ <div className="nav"><div className="brand">✦ LearnForge</div><div className="tag">FORGEHACKS 2026 · AI + EDUCATION</div></div>
+ <section className="hero"><div className="eyebrow">LEARN BEYOND MEMORIZATION</div><h1>Ask. Connect. Apply.</h1><p>An adaptive learning companion that maps a learner’s question to the most relevant concept, explains it in plain language, then checks understanding with a targeted micro-quiz.</p></section>
+ <section className="grid">
+  <div className="card"><div className="label">Semantic tutor</div><input className="input" value={query} onChange={e=>setQuery(e.target.value)} placeholder="e.g. Why is hash lookup usually fast?" /><button className="btn" onClick={teach}>Explain with LearnForge</button>
+   <div className="chips">{lessons.map((l,i)=><button key={l.id} className={'chip '+((selected===i+1)?'active':'')} onClick={()=>setSelected(i+1)}>{l.title}</button>)}</div>
+   {answer&&<div className="answer"><h2>{answer.title}</h2><p>{answer.body}</p></div>}
+   <div className="quiz"><div className="label">Adaptive micro-quiz</div><button className="btn" onClick={makeQuiz}>Generate question</button>{quiz&&<div className="answer"><b>{quiz.q}</b>{quiz.options.map((o,i)=><button key={o} className={'option '+(choice===i?'sel':'')} onClick={()=>setChoice(i)}>{o}</button>)}<button className="btn" onClick={submit}>Check answer</button><div className="small">Correct answers: {scoreCount}</div></div>}</div>
+  </div>
+  <aside className="card"><div className="label">How the AI layer works</div><h2>Transparent retrieval + adaptation</h2><p className="small">LearnForge tokenizes the learner query, ranks lesson concepts using a lightweight TF-style similarity score, selects the strongest match, and adapts the next check to that concept.</p>{lessons.map(l=><div className="lesson" key={l.id}><b>{l.title}</b><p>{l.text}</p></div>)}<div className="small">No student credentials are collected. Demo curriculum is local and replaceable with a larger indexed knowledge base or hosted model.</div></aside>
+ </section>
+ </main>
 }
